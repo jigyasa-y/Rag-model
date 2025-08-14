@@ -23,7 +23,13 @@ if not groq_api_key:
 
 st.set_page_config(page_title="Dynamic RAG with Groq", layout="wide")
 
-st.image("images.jpg")
+# ✅ Safe image loading
+try:
+    st.image("images.jpg")
+    # Alternatively, use a hosted image URL to avoid local file issues:
+    # st.image("https://your-hosted-image-url.com/images.jpg")
+except Exception:
+    st.warning("Image could not be loaded. Make sure 'images.jpg' exists in the app directory.")
 
 st.title("Dynamic RAG with Groq, FAISS, and Llama3")
 
@@ -63,7 +69,6 @@ st.header("Chat with your Documents")
 llm = ChatGroq(groq_api_key=groq_api_key, model_name="Llama3-86-8192")
 
 # Create the prompt template
-# Create prompt with {question} variable
 prompt = ChatPromptTemplate.from_template(
     """
     Answer the questions based on the provided context only.
@@ -77,7 +82,6 @@ prompt = ChatPromptTemplate.from_template(
     Question: {question}
     """
 )
-
 
 # Display previous chat messages
 for message in st.session_state.chat_history:
@@ -104,7 +108,7 @@ if prompt_input := st.chat_input("Ask a question about your documents..."):
             # Call the retrieval chain to get a response
             response = retrieval_chain.invoke({"input": prompt_input})
 
-            response_time = time.process_time() - start
+            response_time = time.process_time() - start_time
 
         with st.chat_message("assistant"):
             st.markdown(response['answer'])
@@ -112,6 +116,5 @@ if prompt_input := st.chat_input("Ask a question about your documents..."):
 
         # Add assistant response to chat history
         st.session_state.chat_history.append({"role": "assistant", "content": response['answer']})
-
     else:
         st.warning("Please process your documents before asking questions.")
