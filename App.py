@@ -23,22 +23,21 @@ if not groq_api_key:
 
 st.set_page_config(page_title="Dynamic RAG with Groq", layout="wide")
 
-# ✅ Safe image loading
+# Safe image loading
 try:
     st.image("images.jpg")
-    # Alternatively, use a hosted image URL to avoid local file issues:
-    # st.image("https://your-hosted-image-url.com/images.jpg")
 except Exception:
     st.warning("Image could not be loaded. Make sure 'images.jpg' exists in the app directory.")
 
 st.title("Dynamic RAG with Groq, FAISS, and Llama3")
 
-# Initialize session state for vector store and chat history
+# Initialize session state
 if "vector" not in st.session_state:
     st.session_state.vector = None
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
+# Sidebar document uploader
 with st.sidebar:
     st.header("Upload Documents")
     uploaded_files = st.file_uploader("Upload your PDF documents", type="pdf", accept_multiple_files=True)
@@ -47,17 +46,14 @@ with st.sidebar:
             with st.spinner("Processing documents..."):
                 docs = []
                 for file in uploaded_files:
-                    # To read the file, we first write it to a temporary file
                     with open(file.name, "wb") as f:
                         f.write(file.getbuffer())
                     loader = PyPDFLoader(file.name)
                     docs.extend(loader.load())
 
-                # Split documents into chunks
                 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
                 final_documents = text_splitter.split_documents(docs)
 
-                # Use pre-trained model from Hugging Face for embeddings
                 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
                 st.session_state.vector = FAISS.from_documents(final_documents, embeddings)
                 st.success("Documents processed successfully!")
@@ -88,7 +84,7 @@ for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Get user input
+# Handle user input
 if prompt_input := st.chat_input("Ask a question about your documents..."):
     if st.session_state.vector is not None:
         with st.chat_message("user"):
@@ -97,20 +93,19 @@ if prompt_input := st.chat_input("Ask a question about your documents..."):
         st.session_state.chat_history.append({"role": "user", "content": prompt_input})
 
         with st.spinner("Thinking..."):
-            # Create retrieval chain and document chain
             document_chain = create_stuff_documents_chain(llm, prompt)
-
             retriever = st.session_state.vector.as_retriever()
             retrieval_chain = create_retrieval_chain(retriever, document_chain)
 
             start_time = time.process_time()
 
-            # Call the retrieval chain to get a response
-            template="Answer the following: {input}"  # if you're passing {"input": ...}
+            # ✅ Corrected line: response is now defined
+            response = retrieval_chain.invoke({"question": prompt_input})
 
             response_time = time.process_time() - start_time
 
         with st.chat_message("assistant"):
+            # ✅ Make sure 'answer' exists in the response
             st.markdown(response['answer'])
             st.info(f"Response time: {response_time:.2f} seconds")
 
