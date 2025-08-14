@@ -1,4 +1,4 @@
-streamlist
+streamlit
 python-datenv
 langchain
 langchain-groq
