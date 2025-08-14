@@ -106,7 +106,7 @@ if prompt_input := st.chat_input("Ask a question about your documents..."):
             start_time = time.process_time()
 
             # Call the retrieval chain to get a response
-            response = retrieval_chain.invoke({"input": prompt_input})
+            template="Answer the following: {input}"  # if you're passing {"input": ...}
 
             response_time = time.process_time() - start_time
 
